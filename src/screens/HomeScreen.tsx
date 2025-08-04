@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { colors } from '../constants/colors';
 import { Anniversary } from '../types';
 import { 
@@ -30,6 +31,7 @@ const HomeScreen: React.FC = () => {
   const [upcomingAnniversaries, setUpcomingAnniversaries] = useState<Anniversary[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
 
   const loadData = async () => {
     try {
@@ -144,7 +146,10 @@ const HomeScreen: React.FC = () => {
           <View style={styles.sectionHeader}>
             <Ionicons name="images" size={24} color={colors.primary} />
             <Text style={styles.sectionTitle}>최근 추억</Text>
-            <TouchableOpacity style={styles.moreButton}>
+            <TouchableOpacity 
+              style={styles.moreButton}
+              onPress={() => navigation.navigate('Memory' as never)}
+            >
               <Text style={styles.moreText}>더보기</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.primary} />
             </TouchableOpacity>
@@ -155,12 +160,28 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.emptyText}>
               아직 저장된 추억이 없습니다
             </Text>
-            <TouchableOpacity style={styles.addMemoryButton}>
+            <TouchableOpacity 
+              style={styles.addMemoryButton}
+              onPress={() => navigation.navigate('Memory' as never)}
+            >
               <Text style={styles.addMemoryText}>첫 추억 만들기</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
+      
+      {/* 플로팅 액션 버튼 */}
+      <TouchableOpacity
+        style={[styles.floatingButton, { bottom: insets.bottom + 20 }]}
+        onPress={() => navigation.navigate('Memory' as never)}
+      >
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDark]}
+          style={styles.floatingGradient}
+        >
+          <Ionicons name="camera" size={28} color={colors.white} />
+        </LinearGradient>
+      </TouchableOpacity>
       
       {/* 하단 광고 배너 */}
       <AdBanner />
@@ -288,6 +309,25 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 14,
     fontWeight: '600'
+  },
+  floatingButton: {
+    position: 'absolute',
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    elevation: 8,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8
+  },
+  floatingGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center'
   }
 });
 

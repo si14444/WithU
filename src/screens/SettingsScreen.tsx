@@ -128,11 +128,6 @@ const SettingsScreen: React.FC = () => {
     <View style={styles.container}>
       {/* 상단 SafeArea 배경 */}
       <View style={[styles.topSafeArea, { height: insets.top }]} />
-      
-      {/* 헤더 */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>설정</Text>
-      </View>
 
       <ScrollView style={styles.scrollView}>
         {/* 알림 설정 섹션 */}
@@ -263,18 +258,6 @@ const styles = StyleSheet.create({
   },
   topSafeArea: {
     backgroundColor: colors.white
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text.primary
   },
   scrollView: {
     flex: 1

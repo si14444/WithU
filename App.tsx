@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 // import mobileAds from 'react-native-google-mobile-ads';
-import TabNavigator from './src/navigation/TabNavigator';
+import StackNavigator from './src/navigation/StackNavigator';
 import OnboardingScreen from './src/components/OnboardingScreen';
 import { getRelationshipStartDate } from './src/utils/storage';
 import { setupNotificationListener } from './src/utils/notifications';
@@ -49,7 +49,7 @@ export default function App() {
         <OnboardingScreen onComplete={handleOnboardingComplete} />
       ) : (
         <NavigationContainer>
-          <TabNavigator />
+          <StackNavigator />
           <StatusBar style="auto" />
         </NavigationContainer>
       )}

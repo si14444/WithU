@@ -16,7 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
 import { Memory } from '../types';
-import { getMemories, addMemory } from '../utils/storage';
+import { getMemories, addMemory, updateMemory, deleteMemory } from '../utils/storage';
 import { formatDate } from '../utils/dateUtils';
 import AdBanner from '../components/AdBanner';
 import CustomCalendar from '../components/CustomCalendar';
@@ -28,6 +28,7 @@ const MemoryScreen: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newMemo, setNewMemo] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -54,9 +55,39 @@ const MemoryScreen: React.FC = () => {
   };
 
   const handleAddMemory = () => {
+    setEditingMemory(null);
     setSelectedImage(null);
     setNewMemo('');
     setShowAddModal(true);
+  };
+
+  const handleEditMemory = (memory: Memory) => {
+    setEditingMemory(memory);
+    setSelectedImage(memory.photo || null);
+    setNewMemo(memory.memo);
+    setShowAddModal(true);
+  };
+
+  const handleDeleteMemory = (memoryId: string) => {
+    Alert.alert(
+      '추억 삭제',
+      '정말로 이 추억을 삭제하시겠습니까?',
+      [
+        { text: '취소', style: 'cancel' },
+        { 
+          text: '삭제', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteMemory(memoryId);
+              await loadMemories();
+            } catch (error) {
+              Alert.alert('오류', '추억 삭제 중 오류가 발생했습니다.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleImagePicker = async () => {
@@ -85,19 +116,30 @@ const MemoryScreen: React.FC = () => {
     }
 
     try {
-      const newMemory: Memory = {
-        id: Date.now().toString(),
-        date: selectedDate,
-        photo: selectedImage || undefined,
-        memo: newMemo.trim(),
-        timestamp: Date.now()
-      };
+      if (editingMemory) {
+        // 수정 모드
+        await updateMemory(editingMemory.id, {
+          photo: selectedImage || undefined,
+          memo: newMemo.trim(),
+          timestamp: Date.now()
+        });
+      } else {
+        // 새 추억 추가
+        const newMemory: Memory = {
+          id: Date.now().toString(),
+          date: selectedDate,
+          photo: selectedImage || undefined,
+          memo: newMemo.trim(),
+          timestamp: Date.now()
+        };
+        await addMemory(newMemory);
+      }
 
-      await addMemory(newMemory);
       await loadMemories();
       setShowAddModal(false);
       setNewMemo('');
       setSelectedImage(null);
+      setEditingMemory(null);
     } catch (error) {
       Alert.alert('오류', '추억 저장 중 오류가 발생했습니다.');
     }
@@ -151,6 +193,25 @@ const MemoryScreen: React.FC = () => {
                   {selectedMemory.memo}
                 </Text>
               </View>
+              
+              {/* 수정/삭제 버튼 */}
+              <View style={styles.memoryActions}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.editButton]}
+                  onPress={() => handleEditMemory(selectedMemory)}
+                >
+                  <Ionicons name="pencil" size={16} color={colors.white} />
+                  <Text style={styles.actionButtonText}>수정</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.deleteButton]}
+                  onPress={() => handleDeleteMemory(selectedMemory.id)}
+                >
+                  <Ionicons name="trash" size={16} color={colors.white} />
+                  <Text style={styles.actionButtonText}>삭제</Text>
+                </TouchableOpacity>
+              </View>
             </ScrollView>
           ) : (
             <View style={styles.noMemory}>
@@ -182,6 +243,20 @@ const MemoryScreen: React.FC = () => {
                 <Text style={styles.timelineDateText}>
                   {formatDate(memory.date)}
                 </Text>
+                <View style={styles.timelineActions}>
+                  <TouchableOpacity
+                    style={styles.timelineActionButton}
+                    onPress={() => handleEditMemory(memory)}
+                  >
+                    <Ionicons name="pencil" size={16} color={colors.white} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.timelineActionButton, { backgroundColor: colors.error }]}
+                    onPress={() => handleDeleteMemory(memory.id)}
+                  >
+                    <Ionicons name="trash" size={16} color={colors.white} />
+                  </TouchableOpacity>
+                </View>
               </View>
               <View style={styles.timelineContent}>
                 {memory.photo && (
@@ -219,9 +294,8 @@ const MemoryScreen: React.FC = () => {
       {/* 상단 SafeArea 배경 */}
       <View style={[styles.topSafeArea, { height: insets.top }]} />
       
-      {/* 헤더 */}
+      {/* 뷰 토글 헤더 */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>추억</Text>
         <View style={styles.viewToggle}>
           <TouchableOpacity
             style={[
@@ -282,7 +356,9 @@ const MemoryScreen: React.FC = () => {
             <TouchableOpacity onPress={() => setShowAddModal(false)}>
               <Text style={styles.modalCancel}>취소</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>새 추억</Text>
+            <Text style={styles.modalTitle}>
+              {editingMemory ? '추억 수정' : '새 추억'}
+            </Text>
             <TouchableOpacity onPress={handleSaveMemory}>
               <Text style={styles.modalSave}>저장</Text>
             </TouchableOpacity>
@@ -332,18 +408,13 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.border
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text.primary
   },
   viewToggle: {
     flexDirection: 'row',
@@ -487,6 +558,38 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingHorizontal: 20
   },
+  memoryActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 20,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: colors.border
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    elevation: 2,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22
+  },
+  editButton: {
+    backgroundColor: colors.primary
+  },
+  deleteButton: {
+    backgroundColor: colors.error
+  },
+  actionButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6
+  },
   timelineContainer: {
     flex: 1,
     padding: 20
@@ -505,12 +608,27 @@ const styles = StyleSheet.create({
   timelineDate: {
     backgroundColor: colors.primary,
     paddingHorizontal: 15,
-    paddingVertical: 8
+    paddingVertical: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
   timelineDateText: {
     color: colors.white,
     fontSize: 14,
     fontWeight: '600'
+  },
+  timelineActions: {
+    flexDirection: 'row',
+    gap: 8
+  },
+  timelineActionButton: {
+    backgroundColor: colors.primaryDark,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   timelineContent: {
     padding: 15

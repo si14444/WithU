@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import { colors } from '../constants/colors';
 
@@ -8,6 +9,8 @@ interface AdBannerProps {
 }
 
 const AdBanner: React.FC<AdBannerProps> = ({ style }) => {
+  const insets = useSafeAreaInsets();
+  
   // Google Mobile Ads 관련 코드 주석 처리
   // const [adLoaded, setAdLoaded] = useState(false);
   // const [adError, setAdError] = useState(false);
@@ -40,7 +43,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ style }) => {
 
   // 임시 플레이스홀더로 대체
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }, style]}>
       <Text style={styles.placeholderText}>광고 배너 영역 (개발 중)</Text>
       {/* Google Mobile Ads 주석 처리 */}
       {/* <BannerAd
@@ -63,12 +66,13 @@ const AdBanner: React.FC<AdBannerProps> = ({ style }) => {
 
 const styles = StyleSheet.create({
   container: {
-    height: 60,
+    minHeight: 60,
     backgroundColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: colors.border
+    borderTopColor: colors.border,
+    paddingTop: 10
   },
   errorContainer: {
     backgroundColor: colors.background

@@ -62,6 +62,34 @@ export const addMemory = async (memory: Memory): Promise<void> => {
   }
 };
 
+export const updateMemory = async (memoryId: string, updatedMemory: Partial<Memory>): Promise<void> => {
+  try {
+    const existingMemories = await getMemories();
+    const memoryIndex = existingMemories.findIndex(memory => memory.id === memoryId);
+    
+    if (memoryIndex === -1) {
+      throw new Error('Memory not found');
+    }
+    
+    existingMemories[memoryIndex] = { ...existingMemories[memoryIndex], ...updatedMemory };
+    await saveMemories(existingMemories);
+  } catch (error) {
+    console.error('Error updating memory:', error);
+    throw error;
+  }
+};
+
+export const deleteMemory = async (memoryId: string): Promise<void> => {
+  try {
+    const existingMemories = await getMemories();
+    const updatedMemories = existingMemories.filter(memory => memory.id !== memoryId);
+    await saveMemories(updatedMemories);
+  } catch (error) {
+    console.error('Error deleting memory:', error);
+    throw error;
+  }
+};
+
 export const saveCustomAnniversaries = async (anniversaries: Anniversary[]): Promise<void> => {
   try {
     await AsyncStorage.setItem(KEYS.CUSTOM_ANNIVERSARIES, JSON.stringify(anniversaries));
