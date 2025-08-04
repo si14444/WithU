@@ -24,18 +24,18 @@ const StackNavigator: React.FC = () => {
         headerTintColor: colors.primary,
         headerTitleStyle: {
           fontWeight: "bold",
-          fontSize: 18,
+          fontSize: 16,
           color: colors.text.primary,
         },
         headerBackTitle: "",
-        headerLeftContainerStyle: {
-          paddingLeft: 16,
-        },
         headerRightContainerStyle: {
           paddingRight: 16,
         },
         headerTitleContainerStyle: {
           paddingHorizontal: 16,
+        },
+        headerLeftContainerStyle: {
+          paddingLeft: 16,
         },
       }}
     >
