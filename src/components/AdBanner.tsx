@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 // import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
-import { colors } from '../constants/colors';
+import { colors } from "../constants/colors";
 
 interface AdBannerProps {
   style?: object;
@@ -10,15 +10,15 @@ interface AdBannerProps {
 
 const AdBanner: React.FC<AdBannerProps> = ({ style }) => {
   const insets = useSafeAreaInsets();
-  
+
   // Google Mobile Ads 관련 코드 주석 처리
   // const [adLoaded, setAdLoaded] = useState(false);
   // const [adError, setAdError] = useState(false);
 
   // 테스트용 광고 단위 ID 사용 (실제 배포 시에는 진짜 ID로 변경 필요)
-  // const adUnitId = __DEV__ 
-  //   ? TestIds.BANNER 
-  //   : Platform.OS === 'ios' 
+  // const adUnitId = __DEV__
+  //   ? TestIds.BANNER
+  //   : Platform.OS === 'ios'
   //     ? 'ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyy' // iOS 광고 단위 ID
   //     : 'ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyy'; // Android 광고 단위 ID
 
@@ -44,7 +44,9 @@ const AdBanner: React.FC<AdBannerProps> = ({ style }) => {
   // 임시 플레이스홀더로 대체
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }, style]}>
-      <Text style={styles.placeholderText}>광고 배너 영역 (개발 중)</Text>
+      <View style={styles.placeholderContainer}>
+        <Text style={styles.placeholderText}>광고 배너 영역 (개발 중)</Text>
+      </View>
       {/* Google Mobile Ads 주석 처리 */}
       {/* <BannerAd
         unitId={adUnitId}
@@ -66,33 +68,33 @@ const AdBanner: React.FC<AdBannerProps> = ({ style }) => {
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 60,
-    backgroundColor: colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
+    minHeight: 100,
+    padding: 10,
+    backgroundColor: colors.white,
+    alignItems: "center",
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: 10
   },
   errorContainer: {
-    backgroundColor: colors.background
+    backgroundColor: colors.background,
   },
   errorText: {
     color: colors.text.light,
-    fontSize: 12
+    fontSize: 12,
   },
   placeholderContainer: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    height: '100%',
-    backgroundColor: colors.border
+    marginTop: 10,
+    position: "absolute",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    height: "100%",
+    backgroundColor: colors.border,
   },
   placeholderText: {
     color: colors.text.light,
-    fontSize: 12
-  }
+    fontSize: 12,
+  },
 });
 
 export default AdBanner;
