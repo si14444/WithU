@@ -39,10 +39,13 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={styles.container}>
+      {/* 상단 SafeArea 배경 */}
+      <View style={[styles.topSafeArea, { height: insets.top }]} />
+      
       <LinearGradient
         colors={[colors.primaryLight, colors.primary]}
-        style={styles.gradient}
+        style={[styles.gradient, { paddingBottom: insets.bottom }]}
       >
         <View style={styles.content}>
           <Text style={styles.title}>WithU</Text>
@@ -99,6 +102,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1
+  },
+  topSafeArea: {
+    backgroundColor: colors.primaryLight
   },
   gradient: {
     flex: 1

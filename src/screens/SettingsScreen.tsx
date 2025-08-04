@@ -125,7 +125,10 @@ const SettingsScreen: React.FC = () => {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
+      {/* 상단 SafeArea 배경 */}
+      <View style={[styles.topSafeArea, { height: insets.top }]} />
+      
       {/* 헤더 */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>설정</Text>
@@ -257,6 +260,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background
+  },
+  topSafeArea: {
+    backgroundColor: colors.white
   },
   header: {
     paddingHorizontal: 20,

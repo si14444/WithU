@@ -215,7 +215,10 @@ const MemoryScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
+      {/* 상단 SafeArea 배경 */}
+      <View style={[styles.topSafeArea, { height: insets.top }]} />
+      
       {/* 헤더 */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>추억</Text>
@@ -323,6 +326,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background
+  },
+  topSafeArea: {
+    backgroundColor: colors.white
   },
   header: {
     flexDirection: 'row',

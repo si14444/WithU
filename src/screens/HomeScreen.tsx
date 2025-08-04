@@ -75,7 +75,10 @@ const HomeScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
+      {/* 상단 SafeArea 배경 */}
+      <View style={[styles.topSafeArea, { height: insets.top }]} />
+      
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -169,6 +172,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background
+  },
+  topSafeArea: {
+    backgroundColor: colors.white
   },
   scrollView: {
     flex: 1
