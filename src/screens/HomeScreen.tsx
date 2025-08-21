@@ -3,6 +3,7 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
+  Image,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -13,7 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AdBanner from "../components/AdBanner";
 import { colors } from "../constants/colors";
-import { Anniversary } from "../types";
+import { Anniversary, Memory } from "../types";
 import {
   calculateDaysBetween,
   formatDate,
@@ -22,6 +23,7 @@ import {
 } from "../utils/dateUtils";
 import {
   getCustomAnniversaries,
+  getMemories,
   getRelationshipStartDate,
 } from "../utils/storage";
 
@@ -30,6 +32,7 @@ const HomeScreen: React.FC = () => {
   const [upcomingAnniversaries, setUpcomingAnniversaries] = useState<
     Anniversary[]
   >([]);
+  const [recentMemories, setRecentMemories] = useState<Memory[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -55,6 +58,13 @@ const HomeScreen: React.FC = () => {
           .slice(0, 5); // 상위 5개만 표시
 
         setUpcomingAnniversaries(allAnniversaries);
+
+        // 최근 추억 로드 (최신 3개)
+        const memories = await getMemories();
+        const sortedMemories = memories
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 3);
+        setRecentMemories(sortedMemories);
       }
     } catch (error) {
       console.error("Error loading home data:", error);
@@ -156,20 +166,49 @@ const HomeScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="images-outline"
-              size={48}
-              color={colors.text.light}
-            />
-            <Text style={styles.emptyText}>아직 저장된 추억이 없습니다</Text>
-            <TouchableOpacity
-              style={styles.addMemoryButton}
-              onPress={() => navigation.navigate("Memory" as never)}
-            >
-              <Text style={styles.addMemoryText}>첫 추억 만들기</Text>
-            </TouchableOpacity>
-          </View>
+          {recentMemories.length > 0 ? (
+            <View>
+              {recentMemories.map((memory) => (
+                <TouchableOpacity
+                  key={memory.id}
+                  style={styles.memoryItem}
+                  onPress={() => navigation.navigate("Memory" as never)}
+                >
+                  <View style={styles.memoryContent}>
+                    <View style={styles.memoryDateContainer}>
+                      <Text style={styles.memoryDate}>
+                        {formatDate(memory.date)}
+                      </Text>
+                    </View>
+                    <Text style={styles.memoryMemo} numberOfLines={2}>
+                      {memory.memo}
+                    </Text>
+                  </View>
+                  {memory.photo && (
+                    <Image 
+                      source={{ uri: memory.photo }} 
+                      style={styles.memoryThumbnail}
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons
+                name="images-outline"
+                size={48}
+                color={colors.text.light}
+              />
+              <Text style={styles.emptyText}>아직 저장된 추억이 없습니다</Text>
+              <TouchableOpacity
+                style={styles.addMemoryButton}
+                onPress={() => navigation.navigate("Memory" as never)}
+              >
+                <Text style={styles.addMemoryText}>첫 추억 만들기</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -248,11 +287,21 @@ const styles = StyleSheet.create({
   moreButton: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    elevation: 1,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
   },
   moreText: {
     fontSize: 14,
     color: colors.primary,
     marginRight: 4,
+    fontWeight: "600",
   },
   anniversaryItem: {
     backgroundColor: colors.white,
@@ -303,34 +352,76 @@ const styles = StyleSheet.create({
   },
   addMemoryButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginTop: 15,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 25,
+    marginTop: 20,
+    elevation: 3,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    alignItems: "center",
   },
   addMemoryText: {
     color: colors.white,
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
   },
   floatingButton: {
     position: "absolute",
     right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    elevation: 8,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    elevation: 12,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
   },
   floatingGradient: {
     width: "100%",
     height: "100%",
-    borderRadius: 30,
+    borderRadius: 33,
     justifyContent: "center",
     alignItems: "center",
+  },
+  memoryItem: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    elevation: 2,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+  },
+  memoryContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  memoryDateContainer: {
+    marginBottom: 6,
+  },
+  memoryDate: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+  memoryMemo: {
+    fontSize: 15,
+    color: colors.text.primary,
+    lineHeight: 20,
+  },
+  memoryThumbnail: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: colors.border,
   },
 });
 
