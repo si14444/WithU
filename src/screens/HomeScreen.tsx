@@ -3,6 +3,7 @@ import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   RefreshControl,
   ScrollView,
@@ -12,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AddAnniversaryModal from "../components/AddAnniversaryModal";
 import AdBanner from "../components/AdBanner";
 import { colors } from "../constants/colors";
 import { Anniversary, Memory } from "../types";
@@ -20,11 +22,15 @@ import {
   formatDate,
   formatDDay,
   generateAutoAnniversaries,
+  updateAnniversaryDaysUntil,
 } from "../utils/dateUtils";
 import {
+  addCustomAnniversary,
+  deleteCustomAnniversary,
   getCustomAnniversaries,
   getMemories,
   getRelationshipStartDate,
+  updateCustomAnniversary,
 } from "../utils/storage";
 
 const HomeScreen: React.FC = () => {
@@ -34,6 +40,8 @@ const HomeScreen: React.FC = () => {
   >([]);
   const [recentMemories, setRecentMemories] = useState<Memory[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [showAddAnniversaryModal, setShowAddAnniversaryModal] = useState(false);
+  const [editingAnniversary, setEditingAnniversary] = useState<Anniversary | null>(null);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
@@ -51,8 +59,11 @@ const HomeScreen: React.FC = () => {
         // 사용자 정의 기념일 로드
         const customAnniversaries = await getCustomAnniversaries();
 
+        // 사용자 정의 기념일의 daysUntil 값 업데이트
+        const updatedCustomAnniversaries = updateAnniversaryDaysUntil(customAnniversaries);
+
         // 모든 기념일 합치고 날짜순 정렬
-        const allAnniversaries = [...autoAnniversaries, ...customAnniversaries]
+        const allAnniversaries = [...autoAnniversaries, ...updatedCustomAnniversaries]
           .filter((anniversary) => anniversary.daysUntil >= 0)
           .sort((a, b) => a.daysUntil - b.daysUntil)
           .slice(0, 5); // 상위 5개만 표시
@@ -87,6 +98,57 @@ const HomeScreen: React.FC = () => {
     return `${daysUntil}일 후`;
   };
 
+  const handleAddAnniversary = () => {
+    setEditingAnniversary(null);
+    setShowAddAnniversaryModal(true);
+  };
+
+  const handleEditAnniversary = (anniversary: Anniversary) => {
+    setEditingAnniversary(anniversary);
+    setShowAddAnniversaryModal(true);
+  };
+
+  const handleDeleteAnniversary = (anniversary: Anniversary) => {
+    if (!anniversary.isCustom) {
+      Alert.alert("알림", "자동 기념일은 삭제할 수 없습니다.");
+      return;
+    }
+
+    Alert.alert(
+      "기념일 삭제",
+      `'${anniversary.name}' 기념일을 삭제하시겠습니까?`,
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteCustomAnniversary(anniversary.id);
+              await loadData();
+            } catch (error) {
+              Alert.alert("오류", "기념일 삭제 중 오류가 발생했습니다.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSaveAnniversary = async (anniversary: Omit<Anniversary, "id" | "daysUntil">) => {
+    try {
+      if (editingAnniversary) {
+        await updateCustomAnniversary(editingAnniversary.id, anniversary);
+      } else {
+        await addCustomAnniversary(anniversary);
+      }
+      await loadData();
+      setShowAddAnniversaryModal(false);
+    } catch (error) {
+      Alert.alert("오류", "기념일 저장 중 오류가 발생했습니다.");
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* 상단 SafeArea 배경 */}
@@ -115,16 +177,37 @@ const HomeScreen: React.FC = () => {
           <View style={styles.sectionHeader}>
             <Ionicons name="calendar" size={24} color={colors.primary} />
             <Text style={styles.sectionTitle}>다가오는 기념일</Text>
+            <TouchableOpacity
+              style={styles.addAnniversaryButton}
+              onPress={handleAddAnniversary}
+            >
+              <Ionicons name="add" size={20} color={colors.white} />
+            </TouchableOpacity>
           </View>
 
           {upcomingAnniversaries.length > 0 ? (
             upcomingAnniversaries.map((anniversary) => (
-              <TouchableOpacity
-                key={anniversary.id}
-                style={styles.anniversaryItem}
-              >
+              <View key={anniversary.id} style={styles.anniversaryItem}>
                 <View style={styles.anniversaryInfo}>
-                  <Text style={styles.anniversaryName}>{anniversary.name}</Text>
+                  <View style={styles.anniversaryHeader}>
+                    <Text style={styles.anniversaryName}>{anniversary.name}</Text>
+                    {anniversary.isCustom && (
+                      <View style={styles.anniversaryActions}>
+                        <TouchableOpacity
+                          style={styles.anniversaryActionButton}
+                          onPress={() => handleEditAnniversary(anniversary)}
+                        >
+                          <Ionicons name="pencil" size={14} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.anniversaryActionButton}
+                          onPress={() => handleDeleteAnniversary(anniversary)}
+                        >
+                          <Ionicons name="trash" size={14} color={colors.error} />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                   <Text style={styles.anniversaryDate}>
                     {formatDate(anniversary.date)}
                   </Text>
@@ -134,7 +217,7 @@ const HomeScreen: React.FC = () => {
                     {getDayText(anniversary.daysUntil)}
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </View>
             ))
           ) : (
             <View style={styles.emptyState}>
@@ -227,6 +310,14 @@ const HomeScreen: React.FC = () => {
 
       {/* 하단 광고 배너 */}
       <AdBanner />
+
+      {/* 기념일 추가 모달 */}
+      <AddAnniversaryModal
+        visible={showAddAnniversaryModal}
+        onClose={() => setShowAddAnniversaryModal(false)}
+        onSave={handleSaveAnniversary}
+        editingAnniversary={editingAnniversary}
+      />
     </View>
   );
 };
@@ -422,6 +513,32 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 8,
     backgroundColor: colors.border,
+  },
+  addAnniversaryButton: {
+    backgroundColor: colors.primary,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 2,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+  },
+  anniversaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  anniversaryActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  anniversaryActionButton: {
+    padding: 4,
   },
 });
 

@@ -63,3 +63,25 @@ export const formatDateShort = (date: Date): string => {
     day: 'numeric'
   });
 };
+
+export const calculateDaysUntilAnniversary = (anniversaryDate: Date): number => {
+  const today = new Date();
+  const anniversary = new Date(anniversaryDate);
+  
+  // 올해 날짜로 설정
+  anniversary.setFullYear(today.getFullYear());
+  
+  // 이미 지났으면 내년으로 설정
+  if (anniversary < today) {
+    anniversary.setFullYear(today.getFullYear() + 1);
+  }
+  
+  return calculateDaysBetween(today, anniversary);
+};
+
+export const updateAnniversaryDaysUntil = (anniversaries: Anniversary[]): Anniversary[] => {
+  return anniversaries.map(anniversary => ({
+    ...anniversary,
+    daysUntil: calculateDaysUntilAnniversary(anniversary.date)
+  }));
+};

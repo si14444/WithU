@@ -114,3 +114,50 @@ export const getCustomAnniversaries = async (): Promise<Anniversary[]> => {
     return [];
   }
 };
+
+export const addCustomAnniversary = async (anniversary: Omit<Anniversary, 'id' | 'daysUntil'>): Promise<void> => {
+  try {
+    const existingAnniversaries = await getCustomAnniversaries();
+    const newAnniversary: Anniversary = {
+      ...anniversary,
+      id: Date.now().toString(),
+      daysUntil: 0, // Will be calculated in dateUtils
+    };
+    const updatedAnniversaries = [...existingAnniversaries, newAnniversary];
+    await saveCustomAnniversaries(updatedAnniversaries);
+  } catch (error) {
+    console.error('Error adding custom anniversary:', error);
+    throw error;
+  }
+};
+
+export const updateCustomAnniversary = async (anniversaryId: string, updatedAnniversary: Partial<Anniversary>): Promise<void> => {
+  try {
+    const existingAnniversaries = await getCustomAnniversaries();
+    const anniversaryIndex = existingAnniversaries.findIndex(anniversary => anniversary.id === anniversaryId);
+    
+    if (anniversaryIndex === -1) {
+      throw new Error('Anniversary not found');
+    }
+    
+    existingAnniversaries[anniversaryIndex] = { 
+      ...existingAnniversaries[anniversaryIndex], 
+      ...updatedAnniversary 
+    };
+    await saveCustomAnniversaries(existingAnniversaries);
+  } catch (error) {
+    console.error('Error updating custom anniversary:', error);
+    throw error;
+  }
+};
+
+export const deleteCustomAnniversary = async (anniversaryId: string): Promise<void> => {
+  try {
+    const existingAnniversaries = await getCustomAnniversaries();
+    const updatedAnniversaries = existingAnniversaries.filter(anniversary => anniversary.id !== anniversaryId);
+    await saveCustomAnniversaries(updatedAnniversaries);
+  } catch (error) {
+    console.error('Error deleting custom anniversary:', error);
+    throw error;
+  }
+};
