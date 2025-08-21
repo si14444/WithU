@@ -22,7 +22,6 @@
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
     "react-native": "0.79.5",
-    "react-native-calendar-picker": "^8.0.5",
     "react-native-gesture-handler": "^2.27.2",
     "react-native-google-mobile-ads": "^15.4.0",
     "react-native-safe-area-context": "^5.5.2",

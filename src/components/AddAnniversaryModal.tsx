@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useState } from "react";
 import {
   Alert,
@@ -14,6 +13,7 @@ import {
 } from "react-native";
 import { colors } from "../constants/colors";
 import { Anniversary } from "../types";
+import CustomDatePicker from "./CustomDatePicker";
 
 interface AddAnniversaryModalProps {
   visible: boolean;
@@ -34,11 +34,9 @@ const AddAnniversaryModal: React.FC<AddAnniversaryModalProps> = ({
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const handleDateChange = (_: any, date?: Date) => {
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
     setShowDatePicker(false);
-    if (date) {
-      setSelectedDate(date);
-    }
   };
 
   const handleSave = () => {
@@ -64,89 +62,92 @@ const AddAnniversaryModal: React.FC<AddAnniversaryModalProps> = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-    >
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose}>
-            <Text style={styles.cancelText}>취소</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>
-            {editingAnniversary ? "기념일 수정" : "새 기념일"}
-          </Text>
-          <TouchableOpacity onPress={handleSave}>
-            <Text style={styles.saveText}>저장</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.content}>
-          <View style={styles.section}>
-            <Text style={styles.label}>기념일 이름</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="예: 첫 만남, 첫 키스, 프로포즈 등"
-              value={name}
-              onChangeText={setName}
-              maxLength={30}
-            />
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={handleClose}>
+              <Text style={styles.cancelText}>취소</Text>
+            </TouchableOpacity>
+            <Text style={styles.title}>
+              {editingAnniversary ? "기념일 수정" : "새 기념일"}
+            </Text>
+            <TouchableOpacity onPress={handleSave}>
+              <Text style={styles.saveText}>저장</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.label}>날짜</Text>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <View style={styles.dateButtonContent}>
+          <ScrollView style={styles.content}>
+            <View style={styles.section}>
+              <Text style={styles.label}>기념일 이름</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="예: 첫 만남, 첫 키스, 프로포즈 등"
+                value={name}
+                onChangeText={setName}
+                maxLength={30}
+              />
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.label}>날짜</Text>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <View style={styles.dateButtonContent}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <Text style={styles.dateText}>
+                    {selectedDate.toLocaleDateString("ko-KR", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </Text>
+                </View>
                 <Ionicons
-                  name="calendar-outline"
+                  name="chevron-forward"
                   size={20}
+                  color={colors.text.light}
+                />
+              </TouchableOpacity>
+
+            </View>
+
+            <View style={styles.infoSection}>
+              <View style={styles.infoCard}>
+                <Ionicons
+                  name="information-circle"
+                  size={24}
                   color={colors.primary}
                 />
-                <Text style={styles.dateText}>
-                  {selectedDate.toLocaleDateString("ko-KR", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+                <Text style={styles.infoText}>
+                  추가한 기념일은 홈 화면의 "다가오는 기념일" 목록에 표시되며, 알림
+                  설정이 활성화된 경우 기념일 알림을 받을 수 있습니다.
                 </Text>
               </View>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={colors.text.light}
-              />
-            </TouchableOpacity>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}
-              />
-            )}
-          </View>
-
-          <View style={styles.infoSection}>
-            <View style={styles.infoCard}>
-              <Ionicons
-                name="information-circle"
-                size={24}
-                color={colors.primary}
-              />
-              <Text style={styles.infoText}>
-                추가한 기념일은 홈 화면의 "다가오는 기념일" 목록에 표시되며, 알림
-                설정이 활성화된 경우 기념일 알림을 받을 수 있습니다.
-              </Text>
             </View>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+      
+      {showDatePicker && (
+        <CustomDatePicker
+          visible={showDatePicker}
+          selectedDate={selectedDate}
+          onDateSelect={handleDateSelect}
+          onClose={() => setShowDatePicker(false)}
+        />
+      )}
+    </>
   );
 };
 
