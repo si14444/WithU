@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-// import mobileAds from 'react-native-google-mobile-ads';
 import StackNavigator from './src/navigation/StackNavigator';
 import OnboardingScreen from './src/components/OnboardingScreen';
 import { getRelationshipStartDate } from './src/utils/storage';
 import { setupNotificationListener } from './src/utils/notifications';
+import { initializeAdMob } from './src/utils/adMobInitializer';
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasStartDate, setHasStartDate] = useState(false);
 
   useEffect(() => {
-    // Google Mobile Ads 초기화 (주석 처리)
-    // mobileAds().initialize();
+    // Google Mobile Ads 초기화
+    initializeAdMob();
     
     // 알림 리스너 설정
     const unsubscribe = setupNotificationListener();

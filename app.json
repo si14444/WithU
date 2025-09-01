@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#FF6B8A"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yourcompany.withu",
@@ -47,6 +45,21 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#FF6B8A"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-4535163023491412~4138729900",
+          "iosAppId": "ca-app-pub-4535163023491412~2721722360"
         }
       ]
     ],
