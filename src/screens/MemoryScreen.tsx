@@ -26,6 +26,7 @@ import {
   getMemories,
   updateMemory,
 } from "../utils/storage";
+import { useInterstitialAd } from "../components/InterstitialAdManager";
 
 const MemoryScreen: React.FC = () => {
   const [viewMode, setViewMode] = useState<"calendar" | "timeline">("calendar");
@@ -38,6 +39,7 @@ const MemoryScreen: React.FC = () => {
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
   const insets = useSafeAreaInsets();
+  const { showAd } = useInterstitialAd();
 
   useEffect(() => {
     loadMemories();
@@ -149,6 +151,10 @@ const MemoryScreen: React.FC = () => {
           timestamp: Date.now(),
         };
         await addMemory(newMemory);
+        // 새 추억 저장 후 전면 광고 표시 시도
+        setTimeout(() => {
+          showAd('memory_saved');
+        }, 1000);
       }
 
       await loadMemories();

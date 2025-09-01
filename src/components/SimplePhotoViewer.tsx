@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../constants/colors";
 import { Memory } from "../types";
 import { formatDate } from "../utils/dateUtils";
+import { useInterstitialAd } from "./InterstitialAdManager";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -34,7 +35,9 @@ const SimplePhotoViewer: React.FC<PhotoViewerProps> = ({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isSlideshow, setIsSlideshow] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [viewStartTime] = useState(Date.now());
   const insets = useSafeAreaInsets();
+  const { showAd } = useInterstitialAd();
   
   const flatListRef = useRef<FlatList>(null);
   const slideshowTimer = useRef<NodeJS.Timeout | null>(null);
@@ -215,7 +218,16 @@ const SimplePhotoViewer: React.FC<PhotoViewerProps> = ({
           <View style={[styles.controlsOverlay, { paddingTop: insets.top }]}>
             {/* 상단 컨트롤 */}
             <View style={styles.topControls}>
-              <TouchableOpacity style={styles.controlButton} onPress={onClose}>
+              <TouchableOpacity style={styles.controlButton} onPress={() => {
+                const viewDuration = Date.now() - viewStartTime;
+                onClose();
+                // 10초 이상 본 경우 전면 광고 표시 시도
+                if (viewDuration > 10000) {
+                  setTimeout(() => {
+                    showAd('gallery_closed');
+                  }, 500);
+                }
+              }}>
                 <Ionicons name="close" size={28} color={colors.white} />
               </TouchableOpacity>
               <View style={styles.photoInfo}>
