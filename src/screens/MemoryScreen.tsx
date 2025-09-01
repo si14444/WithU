@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AdBanner from "../components/AdBanner";
 import CustomCalendar from "../components/CustomCalendar";
+import SimplePhotoViewer from "../components/SimplePhotoViewer";
 import { colors } from "../constants/colors";
 import { Memory } from "../types";
 import { formatDate } from "../utils/dateUtils";
@@ -34,6 +35,8 @@ const MemoryScreen: React.FC = () => {
   const [newMemo, setNewMemo] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -89,6 +92,15 @@ const MemoryScreen: React.FC = () => {
         },
       },
     ]);
+  };
+
+  const handlePhotoPress = (memory: Memory) => {
+    const memoriesWithPhotos = memories.filter(m => m.photo);
+    const index = memoriesWithPhotos.findIndex(m => m.id === memory.id);
+    if (index >= 0) {
+      setPhotoViewerIndex(index);
+      setShowPhotoViewer(true);
+    }
   };
 
   const handleImagePicker = async () => {
@@ -276,10 +288,12 @@ const MemoryScreen: React.FC = () => {
               </View>
               <View style={styles.timelineContent}>
                 {memory.photo && (
-                  <Image
-                    source={{ uri: memory.photo }}
-                    style={styles.timelineImage}
-                  />
+                  <TouchableOpacity onPress={() => handlePhotoPress(memory)}>
+                    <Image
+                      source={{ uri: memory.photo }}
+                      style={styles.timelineImage}
+                    />
+                  </TouchableOpacity>
                 )}
                 <Text style={styles.timelineMemo}>{memory.memo}</Text>
               </View>
@@ -362,6 +376,14 @@ const MemoryScreen: React.FC = () => {
 
       {/* 하단 광고 배너 */}
       <AdBanner />
+
+      {/* 사진 갤러리 뷰어 */}
+      <SimplePhotoViewer
+        visible={showPhotoViewer}
+        memories={memories.filter(m => m.photo)}
+        initialIndex={photoViewerIndex}
+        onClose={() => setShowPhotoViewer(false)}
+      />
 
       {/* 추억 추가 모달 */}
       <Modal

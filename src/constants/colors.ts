@@ -7,6 +7,7 @@ export const colors = {
   accent: '#FFD700',
   background: '#FFF8F8',
   white: '#FFFFFF',
+  black: '#000000',
   text: {
     primary: '#2D2D2D',
     secondary: '#666666',

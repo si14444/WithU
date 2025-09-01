@@ -22,6 +22,7 @@ import {
   getCustomAnniversaries,
   getRelationshipStartDate,
 } from "../utils/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SettingsScreen: React.FC = () => {
   const [notificationSettings, setNotificationSettings] = useState({
@@ -37,7 +38,15 @@ const SettingsScreen: React.FC = () => {
   }, []);
 
   const checkNotificationStatus = async () => {
-    // 실제 앱에서는 AsyncStorage에서 설정 로드
+    try {
+      const savedSettings = await AsyncStorage.getItem('notificationSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setNotificationSettings(settings);
+      }
+    } catch (error) {
+      console.error('Error loading notification settings:', error);
+    }
   };
 
   const handleNotificationToggle = async (enabled: boolean) => {
@@ -61,13 +70,15 @@ const SettingsScreen: React.FC = () => {
       }
 
       // 기념일 알림 스케줄링
-      await scheduleNotifications();
+      await scheduleNotificationsWithSettings({ ...notificationSettings, enabled });
     } else {
       // 모든 알림 취소
       await cancelAllAnniversaryNotifications();
     }
 
-    setNotificationSettings((prev) => ({ ...prev, enabled }));
+    const newSettings = { ...notificationSettings, enabled };
+    setNotificationSettings(newSettings);
+    await saveNotificationSettings(newSettings);
   };
 
   const scheduleNotifications = async () => {
@@ -95,9 +106,40 @@ const SettingsScreen: React.FC = () => {
   ) => {
     const newSettings = { ...notificationSettings, [setting]: value };
     setNotificationSettings(newSettings);
+    await saveNotificationSettings(newSettings);
 
-    if (notificationSettings.enabled) {
-      await scheduleNotifications();
+    if (newSettings.enabled) {
+      await scheduleNotificationsWithSettings(newSettings);
+    }
+  };
+
+  const saveNotificationSettings = async (settings: typeof notificationSettings) => {
+    try {
+      await AsyncStorage.setItem('notificationSettings', JSON.stringify(settings));
+    } catch (error) {
+      console.error('Error saving notification settings:', error);
+    }
+  };
+
+  const scheduleNotificationsWithSettings = async (settings: typeof notificationSettings) => {
+    try {
+      // 기존 알림 모두 취소
+      await cancelAllAnniversaryNotifications();
+      
+      const startDate = await getRelationshipStartDate();
+      if (!startDate) return;
+
+      const autoAnniversaries = generateAutoAnniversaries(startDate);
+      const customAnniversaries = await getCustomAnniversaries();
+      const allAnniversaries = [...autoAnniversaries, ...customAnniversaries];
+
+      await scheduleMultipleAnniversaryNotifications(allAnniversaries, {
+        onTheDay: settings.onTheDay,
+        oneDayBefore: settings.oneDayBefore,
+        threeDaysBefore: settings.threeDaysBefore,
+      });
+    } catch (error) {
+      console.error('Error scheduling notifications with settings:', error);
     }
   };
 
@@ -124,9 +166,19 @@ const SettingsScreen: React.FC = () => {
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: colors.border, true: colors.primaryLight }}
-        thumbColor={value ? colors.primary : colors.text.light}
+        trackColor={{ 
+          false: disabled ? colors.border : colors.border, 
+          true: disabled ? colors.border : colors.primaryLight 
+        }}
+        thumbColor={
+          disabled 
+            ? colors.text.light 
+            : value 
+              ? colors.primary 
+              : colors.white
+        }
         disabled={disabled}
+        ios_backgroundColor={disabled ? colors.border : colors.border}
       />
     </View>
   );
@@ -236,7 +288,7 @@ const SettingsScreen: React.FC = () => {
         </View>
 
         {/* 데이터 관리 섹션 */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>데이터 관리</Text>
 
           <TouchableOpacity
@@ -295,7 +347,7 @@ const SettingsScreen: React.FC = () => {
               color={colors.text.light}
             />
           </TouchableOpacity>
-        </View>
+        </View> */}
       </ScrollView>
 
       {/* 하단 광고 배너 */}

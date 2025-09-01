@@ -14,8 +14,13 @@ export const generateAutoAnniversaries = (startDate: Date): Anniversary[] => {
   const start = new Date(startDate);
   const today = new Date();
   
-  // 100일 단위 기념일 생성 (최대 1000일까지)
-  for (let i = 100; i <= 1000; i += 100) {
+  // 개발 환경에서는 알림 수를 줄임 (100일, 200일, 300일, 1년만)
+  const isDev = __DEV__;
+  const maxDays = isDev ? 300 : 1000;
+  const maxYears = isDev ? 1 : 10;
+  
+  // 100일 단위 기념일 생성
+  for (let i = 100; i <= maxDays; i += 100) {
     const anniversaryDate = new Date(start);
     anniversaryDate.setDate(anniversaryDate.getDate() + i);
     
@@ -30,8 +35,8 @@ export const generateAutoAnniversaries = (startDate: Date): Anniversary[] => {
     });
   }
   
-  // 연 단위 기념일 생성 (최대 10년까지)
-  for (let year = 1; year <= 10; year++) {
+  // 연 단위 기념일 생성
+  for (let year = 1; year <= maxYears; year++) {
     const anniversaryDate = new Date(start);
     anniversaryDate.setFullYear(anniversaryDate.getFullYear() + year);
     
