@@ -18,7 +18,6 @@ import {
 import { PanGestureHandler, State } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AdBanner from "../components/AdBanner";
-import CustomCalendar from "../components/CustomCalendar";
 import { useInterstitialAd } from "../components/InterstitialAdManager";
 import SimplePhotoViewer from "../components/SimplePhotoViewer";
 import { colors } from "../constants/colors";
@@ -33,8 +32,7 @@ import {
 
 const { width: screenWidth } = Dimensions.get("window");
 
-const MemoryScreen: React.FC = () => {
-  const [viewMode, setViewMode] = useState<"calendar" | "timeline">("calendar");
+const TimelineScreen: React.FC = () => {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
@@ -43,11 +41,8 @@ const MemoryScreen: React.FC = () => {
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
-  const [swipeCount, setSwipeCount] = useState(0);
+  const [viewedItemsCount, setViewedItemsCount] = useState(0);
   const [currentMemoryIndex, setCurrentMemoryIndex] = useState(0);
-  const [viewedMemories, setViewedMemories] = useState<Set<string>>(new Set());
-  const [allMemoriesViewed, setAllMemoriesViewed] = useState(false);
-  const completionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const insets = useSafeAreaInsets();
   const { showAd } = useInterstitialAd();
 
@@ -60,37 +55,6 @@ const MemoryScreen: React.FC = () => {
     loadMemories();
   }, []);
 
-  useEffect(() => {
-    // 타임라인 모드일 때만 viewed memories 추적 (완료 감지는 onSwipe에서 처리)
-    if (viewMode === "timeline" && memories.length > 0) {
-      const sortedMemories = [...memories].sort((a, b) => b.timestamp - a.timestamp);
-      const currentMemory = sortedMemories[currentMemoryIndex];
-
-      if (currentMemory) {
-        setViewedMemories(prev => {
-          const newViewed = new Set(prev);
-          newViewed.add(currentMemory.id);
-          return newViewed;
-        });
-      }
-    }
-  }, [currentMemoryIndex, viewMode, memories]);
-
-  // viewMode가 변경될 때 상태 리셋
-  useEffect(() => {
-    if (viewMode === "timeline") {
-      setViewedMemories(new Set());
-      setAllMemoriesViewed(false);
-      setCurrentMemoryIndex(0);
-      setSwipeCount(0);
-      // 기존 타이머 클리어
-      if (completionTimeoutRef.current) {
-        clearTimeout(completionTimeoutRef.current);
-        completionTimeoutRef.current = null;
-      }
-    }
-  }, [viewMode]);
-
   const loadMemories = async () => {
     try {
       const loadedMemories = await getMemories();
@@ -100,27 +64,11 @@ const MemoryScreen: React.FC = () => {
     }
   };
 
-  const onDateChange = (date: Date) => {
-    setSelectedDate(date);
-  };
-
-  const getMemoryForDate = (date: Date): Memory | undefined => {
-    return memories.find(
-      (memory) => memory.date.toDateString() === date.toDateString()
-    );
-  };
-
-  const handleAddMemory = () => {
-    setEditingMemory(null);
-    setSelectedImage(null);
-    setNewMemo("");
-    setShowAddModal(true);
-  };
-
   const handleEditMemory = (memory: Memory) => {
     setEditingMemory(memory);
     setSelectedImage(memory.photo || null);
     setNewMemo(memory.memo);
+    setSelectedDate(memory.date);
     setShowAddModal(true);
   };
 
@@ -209,134 +157,25 @@ const MemoryScreen: React.FC = () => {
     }
   };
 
-  const renderCalendarView = () => {
-    const selectedMemory = getMemoryForDate(selectedDate);
-    const memoryDates = memories.map((memory) => memory.date);
-
-    return (
-      <ScrollView
-        style={styles.calendarContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <CustomCalendar
-          selectedDate={selectedDate}
-          onDateChange={onDateChange}
-          markedDates={memoryDates}
-        />
-
-        <View style={styles.memoryDetail}>
-          <View style={styles.memoryHeader}>
-            <View style={styles.dateHeaderContainer}>
-              <Text style={styles.selectedDateText}>
-                {formatDate(selectedDate)}
-              </Text>
-              {selectedMemory && (
-                <View style={styles.memoryBadge}>
-                  <Ionicons name="heart" size={14} color={colors.white} />
-                  <Text style={styles.memoryBadgeText}>추억</Text>
-                </View>
-              )}
-            </View>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={handleAddMemory}
-            >
-              <Ionicons name="add" size={20} color={colors.white} />
-            </TouchableOpacity>
-          </View>
-
-          {selectedMemory ? (
-            <ScrollView
-              style={styles.memoryContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {selectedMemory.photo && (
-                <View style={styles.imageContainer}>
-                  <Image
-                    source={{ uri: selectedMemory.photo }}
-                    style={styles.memoryImage}
-                  />
-                </View>
-              )}
-              <View style={styles.memoContainer}>
-                <Text style={styles.memoryMemo}>{selectedMemory.memo}</Text>
-              </View>
-
-              {/* 수정/삭제 버튼 */}
-              <View style={styles.memoryActions}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.editButton]}
-                  onPress={() => handleEditMemory(selectedMemory)}
-                >
-                  <Ionicons name="pencil" size={16} color={colors.white} />
-                  <Text style={styles.actionButtonText}>수정</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.deleteButton]}
-                  onPress={() => handleDeleteMemory(selectedMemory.id)}
-                >
-                  <Ionicons name="trash" size={16} color={colors.white} />
-                  <Text style={styles.actionButtonText}>삭제</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          ) : (
-            <View style={styles.noMemory}>
-              <View style={styles.noMemoryIcon}>
-                <Ionicons
-                  name="heart-outline"
-                  size={48}
-                  color={colors.primary}
-                  opacity={0.3}
-                />
-              </View>
-              <Text style={styles.noMemoryText}>이 날의 추억이 없습니다</Text>
-              <Text style={styles.noMemorySubtext}>
-                위의 + 버튼을 눌러 특별한 순간을 기록해보세요
-              </Text>
-            </View>
-          )}
-        </View>
-      </ScrollView>
-    );
-  };
-
   const onSwipe = (direction: "left" | "right") => {
-    // 모든 추억을 본 경우 스와이프 차단
-    if (allMemoriesViewed) {
-      return;
-    }
-
-    const sortedMemories = [...memories].sort((a, b) => b.timestamp - a.timestamp);
-
-    // 마지막 추억에서 스와이프 시도할 때 완료 처리
-    if (currentMemoryIndex >= sortedMemories.length - 1) {
-      if (!completionTimeoutRef.current) {
-        completionTimeoutRef.current = setTimeout(() => {
-          setAllMemoriesViewed(true);
-          completionTimeoutRef.current = null;
-        }, 300); // 스와이프 애니메이션 후 완료 화면 표시
-      }
-      return;
-    }
-
-    setSwipeCount((prev) => {
+    setViewedItemsCount((prev) => {
       const newCount = prev + 1;
-      // 약 20회 스와이프마다 전면 광고 표시 (18-22 범위에서 랜덤)
-      const adThreshold = 18 + Math.floor(Math.random() * 5); // 18~22
-      if (newCount >= adThreshold) {
+      // 10-20개 스와이프 후 전면 광고 표시
+      if (newCount >= 10 && newCount <= 20 && Math.random() < 0.5) {
         setTimeout(() => {
           showAd();
-          setSwipeCount(0); // 카운터 리셋
-        }, 800); // 스와이프 애니메이션 완료 후 광고 표시
+          setViewedItemsCount(0);
+        }, 1000);
       }
       return newCount;
     });
 
     setCurrentMemoryIndex((prev) => {
+      const sortedMemories = [...memories].sort(
+        (a, b) => b.timestamp - a.timestamp
+      );
       const nextIndex = prev + 1;
-      return nextIndex;
+      return nextIndex >= sortedMemories.length ? 0 : nextIndex;
     });
 
     // 애니메이션 리셋
@@ -351,11 +190,6 @@ const MemoryScreen: React.FC = () => {
   );
 
   const onHandlerStateChange = (event: any) => {
-    // 모든 추억을 본 경우 제스처 차단
-    if (allMemoriesViewed) {
-      return;
-    }
-
     if (event.nativeEvent.oldState === State.ACTIVE) {
       const { translationX, translationY, velocityX } = event.nativeEvent;
       const threshold = screenWidth * 0.3;
@@ -404,12 +238,6 @@ const MemoryScreen: React.FC = () => {
       }
     }
   };
-
-  // 제스처 중 회전 효과
-  const rotateInterpolate = rotate.interpolate({
-    inputRange: [-1, 0, 1],
-    outputRange: ["-10deg", "0deg", "10deg"],
-  });
 
   // translateX에 따른 자동 회전 효과
   const gestureRotate = translateX.interpolate({
@@ -470,6 +298,25 @@ const MemoryScreen: React.FC = () => {
             <Text style={styles.cardMemo}>{memory.memo}</Text>
           </View>
 
+          {/* 액션 버튼들 (최상위 카드에만 표시) */}
+          {isTop && (
+            <View style={styles.cardActions}>
+              <TouchableOpacity
+                style={[styles.cardActionButton, styles.editButton]}
+                onPress={() => handleEditMemory(memory)}
+              >
+                <Ionicons name="pencil" size={18} color={colors.white} />
+                <Text style={styles.actionButtonText}>수정</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.cardActionButton, styles.deleteButton]}
+                onPress={() => handleDeleteMemory(memory.id)}
+              >
+                <Ionicons name="trash" size={18} color={colors.white} />
+                <Text style={styles.actionButtonText}>삭제</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
       </Animated.View>
     );
@@ -488,48 +335,9 @@ const MemoryScreen: React.FC = () => {
             <Text style={styles.emptyTimelineText}>
               아직 저장된 추억이 없습니다
             </Text>
-            <TouchableOpacity
-              style={styles.addFirstMemoryButton}
-              onPress={handleAddMemory}
-            >
-              <Text style={styles.addFirstMemoryText}>첫 추억 만들기</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      );
-    }
-
-    // 모든 추억을 본 경우
-    if (allMemoriesViewed) {
-      return (
-        <View style={styles.completionContainer}>
-          <View style={styles.completionContent}>
-            <Ionicons name="heart" size={80} color={colors.primary} />
-            <Text style={styles.completionTitle}>모든 추억을 보셨어요!</Text>
-            <Text style={styles.completionSubtitle}>
-              {sortedMemories.length}개의 소중한 추억을 모두 감상하셨습니다
+            <Text style={styles.emptySubtext}>
+              달력 화면에서 추억을 만들어 보세요
             </Text>
-            <TouchableOpacity
-              style={styles.restartButton}
-              onPress={() => {
-                setViewedMemories(new Set());
-                setAllMemoriesViewed(false);
-                setCurrentMemoryIndex(0);
-                setSwipeCount(0);
-                // 기존 타이머 클리어
-                if (completionTimeoutRef.current) {
-                  clearTimeout(completionTimeoutRef.current);
-                  completionTimeoutRef.current = null;
-                }
-                // 애니메이션 리셋
-                translateX.setValue(0);
-                translateY.setValue(0);
-                rotate.setValue(0);
-              }}
-            >
-              <Ionicons name="refresh" size={20} color={colors.white} />
-              <Text style={styles.restartButtonText}>다시 보기</Text>
-            </TouchableOpacity>
           </View>
         </View>
       );
@@ -545,7 +353,7 @@ const MemoryScreen: React.FC = () => {
           <View style={styles.swipeHint}>
             <Ionicons name="heart-dislike" size={20} color={colors.error} />
             <Text style={styles.swipeHintText}>
-              좌우로 스와이프하여 추억 보기 ({viewedMemories.size}/{sortedMemories.length})
+              좌우로 스와이프하여 추억 보기
             </Text>
             <Ionicons name="heart" size={20} color={colors.primary} />
           </View>
@@ -571,60 +379,8 @@ const MemoryScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* 상단 SafeArea 배경 */}
-      {/* <View style={[styles.topSafeArea, { height: insets.top }]} /> */}
-
-      {/* 뷰 토글 헤더 */}
-      <View style={styles.header}>
-        <View style={styles.viewToggle}>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              viewMode === "calendar" && styles.activeToggle,
-            ]}
-            onPress={() => setViewMode("calendar")}
-          >
-            <Ionicons
-              name="calendar"
-              size={20}
-              color={viewMode === "calendar" ? colors.white : colors.primary}
-            />
-            <Text
-              style={[
-                styles.toggleText,
-                viewMode === "calendar" && styles.activeToggleText,
-              ]}
-            >
-              달력
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              viewMode === "timeline" && styles.activeToggle,
-            ]}
-            onPress={() => setViewMode("timeline")}
-          >
-            <Ionicons
-              name="list"
-              size={20}
-              color={viewMode === "timeline" ? colors.white : colors.primary}
-            />
-            <Text
-              style={[
-                styles.toggleText,
-                viewMode === "timeline" && styles.activeToggleText,
-              ]}
-            >
-              타임라인
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* 콘텐츠 */}
-      {viewMode === "calendar" ? renderCalendarView() : renderTimelineView()}
+      {/* 타임라인 뷰 */}
+      {renderTimelineView()}
 
       {/* 하단 광고 배너 */}
       <AdBanner />
@@ -637,7 +393,7 @@ const MemoryScreen: React.FC = () => {
         onClose={() => setShowPhotoViewer(false)}
       />
 
-      {/* 추억 추가 모달 */}
+      {/* 추억 수정 모달 */}
       <Modal
         visible={showAddModal}
         animationType="slide"
@@ -648,9 +404,7 @@ const MemoryScreen: React.FC = () => {
             <TouchableOpacity onPress={() => setShowAddModal(false)}>
               <Text style={styles.modalCancel}>취소</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>
-              {editingMemory ? "추억 수정" : "새 추억"}
-            </Text>
+            <Text style={styles.modalTitle}>추억 수정</Text>
             <TouchableOpacity onPress={handleSaveMemory}>
               <Text style={styles.modalSave}>저장</Text>
             </TouchableOpacity>
@@ -695,193 +449,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  topSafeArea: {
-    backgroundColor: colors.white,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  viewToggle: {
-    flexDirection: "row",
-    backgroundColor: colors.border,
-    borderRadius: 20,
-    padding: 2,
-  },
-  toggleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 18,
-  },
-  activeToggle: {
-    backgroundColor: colors.primary,
-  },
-  toggleText: {
-    fontSize: 12,
-    color: colors.primary,
-    marginLeft: 4,
-    fontWeight: "600",
-  },
-  activeToggleText: {
-    color: colors.white,
-  },
-  calendarContainer: {
-    flex: 1,
-  },
-  memoryDetail: {
-    marginTop: 15,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    backgroundColor: colors.white,
-    borderRadius: 15,
-    padding: 20,
-    elevation: 2,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-  },
-  memoryHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  dateHeaderContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  selectedDateText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: colors.text.primary,
-    marginRight: 10,
-  },
-  memoryBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  memoryBadgeText: {
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: "600",
-    marginLeft: 4,
-  },
-  addButton: {
-    backgroundColor: colors.primary,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 2,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-  },
-  memoryContent: {
-    maxHeight: 400,
-  },
-  imageContainer: {
-    borderRadius: 15,
-    overflow: "hidden",
-    marginBottom: 15,
-    elevation: 3,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3.84,
-  },
-  memoryImage: {
-    width: "100%",
-    height: 220,
-    resizeMode: "cover",
-  },
-  memoContainer: {
-    backgroundColor: colors.background,
-    padding: 15,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
-  },
-  memoryMemo: {
-    fontSize: 16,
-    color: colors.text.primary,
-    lineHeight: 24,
-    fontStyle: "italic",
-  },
-  noMemory: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  noMemoryIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  noMemoryText: {
-    fontSize: 18,
-    color: colors.text.secondary,
-    marginBottom: 8,
-    fontWeight: "600",
-  },
-  noMemorySubtext: {
-    fontSize: 14,
-    color: colors.text.light,
-    textAlign: "center",
-    lineHeight: 20,
-    paddingHorizontal: 20,
-  },
-  memoryActions: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 20,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    elevation: 2,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.22,
-    shadowRadius: 2.22,
-  },
-  editButton: {
-    backgroundColor: colors.primary,
-  },
-  deleteButton: {
-    backgroundColor: colors.error,
-  },
-  actionButtonText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: "600",
-    marginLeft: 6,
   },
   // Tinder-style 스타일
   tinderContainer: {
@@ -929,62 +496,58 @@ const styles = StyleSheet.create({
   },
   cardScrollContainer: {
     flexGrow: 1,
-    paddingHorizontal: 25,
-    paddingTop: 10,
-    paddingBottom: 10,
+    padding: 25,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
-    paddingBottom: 10,
+    marginBottom: 25,
+    paddingBottom: 15,
     borderBottomWidth: 2,
     borderBottomColor: colors.primary,
   },
   cardDateText: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
     color: colors.text.primary,
   },
   cardIndexText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text.secondary,
     fontWeight: "600",
     backgroundColor: colors.background,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
   },
   cardImageContainer: {
-    marginBottom: 15,
-    borderRadius: 15,
+    marginBottom: 25,
+    borderRadius: 20,
     overflow: "hidden",
     elevation: 4,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
-    flex: 1,
   },
   cardImage: {
     width: "100%",
-    flex: 1,
-    minHeight: 250,
+    height: 350,
     resizeMode: "cover",
   },
   cardMemoContainer: {
     backgroundColor: colors.background,
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 15,
-    borderLeftWidth: 4,
+    padding: 25,
+    borderRadius: 20,
+    marginBottom: 30,
+    borderLeftWidth: 6,
     borderLeftColor: colors.primary,
   },
   cardMemo: {
-    fontSize: 18,
+    fontSize: 20,
     color: colors.text.primary,
-    lineHeight: 26,
+    lineHeight: 30,
     fontStyle: "italic",
     textAlign: "center",
   },
@@ -992,68 +555,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     paddingHorizontal: 10,
+    paddingBottom: 10,
   },
   cardActionButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 25,
-    paddingVertical: 12,
-    borderRadius: 25,
-    elevation: 3,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    minWidth: 100,
-    justifyContent: "center",
-  },
-  emptyTimelineContainer: {
-    flex: 1,
-    padding: 20,
-  },
-  emptyTimeline: {
-    alignItems: "center",
-    paddingVertical: 60,
-  },
-  completionContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 40,
-    backgroundColor: colors.background,
-  },
-  completionContent: {
-    alignItems: "center",
-    backgroundColor: colors.white,
-    padding: 40,
-    borderRadius: 25,
-    elevation: 4,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    width: "100%",
-    maxWidth: 350,
-  },
-  completionTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: colors.text.primary,
-    marginTop: 20,
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  completionSubtitle: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    textAlign: "center",
-    lineHeight: 24,
-    marginBottom: 30,
-  },
-  restartButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.primary,
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 30,
@@ -1062,30 +568,43 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+    minWidth: 120,
+    justifyContent: "center",
   },
-  restartButtonText: {
+  editButton: {
+    backgroundColor: colors.primary,
+  },
+  deleteButton: {
+    backgroundColor: colors.error,
+  },
+  actionButtonText: {
     color: colors.white,
     fontSize: 18,
     fontWeight: "bold",
     marginLeft: 8,
   },
+  emptyTimelineContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+  },
+  emptyTimeline: {
+    alignItems: "center",
+  },
   emptyTimelineText: {
-    fontSize: 18,
-    color: colors.text.light,
+    fontSize: 20,
+    color: colors.text.secondary,
     marginTop: 20,
+    marginBottom: 10,
     textAlign: "center",
-  },
-  addFirstMemoryButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 25,
-    marginTop: 20,
-  },
-  addFirstMemoryText: {
-    color: colors.white,
-    fontSize: 16,
     fontWeight: "600",
+  },
+  emptySubtext: {
+    fontSize: 16,
+    color: colors.text.light,
+    textAlign: "center",
+    lineHeight: 24,
   },
   modalContainer: {
     flex: 1,
@@ -1163,4 +682,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MemoryScreen;
+export default TimelineScreen;
