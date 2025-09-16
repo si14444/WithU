@@ -545,7 +545,7 @@ const MemoryScreen: React.FC = () => {
           <View style={styles.swipeHint}>
             <Ionicons name="heart-dislike" size={20} color={colors.error} />
             <Text style={styles.swipeHintText}>
-              좌우로 스와이프하여 추억 보기 ({viewedMemories.size}/{sortedMemories.length})
+              좌우로 스와이프하여 추억 보기 ({currentMemoryIndex + 1}/{sortedMemories.length})
             </Text>
             <Ionicons name="heart" size={20} color={colors.primary} />
           </View>
