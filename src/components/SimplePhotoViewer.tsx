@@ -219,14 +219,7 @@ const SimplePhotoViewer: React.FC<PhotoViewerProps> = ({
             {/* 상단 컨트롤 */}
             <View style={styles.topControls}>
               <TouchableOpacity style={styles.controlButton} onPress={() => {
-                const viewDuration = Date.now() - viewStartTime;
                 onClose();
-                // 10초 이상 본 경우 전면 광고 표시 시도
-                if (viewDuration > 10000) {
-                  setTimeout(() => {
-                    showAd('gallery_closed');
-                  }, 500);
-                }
               }}>
                 <Ionicons name="close" size={28} color={colors.white} />
               </TouchableOpacity>
