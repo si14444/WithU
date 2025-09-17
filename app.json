@@ -12,10 +12,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#FF6B8A"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.withu",
+      "bundleIdentifier": "com.si14444.withu",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "사진을 선택하여 추억을 저장하기 위해 갤러리 접근 권한이 필요합니다.",
         "NSUserNotificationsUsageDescription": "기념일 알림을 보내기 위해 알림 권한이 필요합니다."
@@ -27,7 +29,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.yourcompany.withu",
+      "package": "com.si14444.withu",
       "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
@@ -61,11 +63,12 @@
           "androidAppId": "ca-app-pub-4535163023491412~4138729900",
           "iosAppId": "ca-app-pub-4535163023491412~2721722360"
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "47e9bed3-e1db-41c0-8311-9c5d72a85418"
       }
     }
   }
